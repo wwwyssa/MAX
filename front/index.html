@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Pomodoro WebApp</title>
+</head>
+
+<body>
+  <div id="app">
+    <h1>Pomodoro</h1>
+    <div id="timer">25:00</div>
+    <button id="start">Start</button>
+    <button id="pause">Pause</button>
+    <button id="stop">Stop</button>
+  </div>
+  <script>
+    const tg = window.Telegram.WebApp;
+    let interval = null;
+    let remaining = 25 * 60;
+
+    function render() {
+      const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+      const ss = String(remaining % 60).padStart(2, '0');
+      document.getElementById('timer').innerText = `${mm}:${ss}`;
+    }
+    document.getElementById('start').addEventListener('click', () => {
+          if (interval) return;
+          interval = setInterval(() => {
+              remaining--;render();
+              if (remaining <= 0) {
+                clearInterval(interval);
+                interval = null;
+                tg.sendData(JSON.stringify({
+                  type: 'finished'
+                }));
+                new Audio('/sound/finish.mp3 ').play(); }}, 1000)
+                })
+              document.getElementById('pause').addEventListener('click', () => {
+                if (interval) {
+                  clearInterval(interval);
+                  interval = null
+                }
+              })
+              document.getElementById('stop').addEventListener('click', () => {
+                if (interval) {
+                  clearInterval(interval);
+                  interval = null
+                }
+                remaining = 25 * 60;
+                render();
+              })
+              render();
+  </script>
+</body>
+
+</html>
