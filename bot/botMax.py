@@ -8,22 +8,27 @@ from utils import Timer, MapTimer, User, MapUser, Task
 bot = aiomax.Bot("f9LHodD0cOIRY0kxaAAsvfhYqEv2ley3x9B2T7Mn6JIxw7Y6i5U8Wu1eMGbWXUNk1menHVRnTDdwyLRUe6mA",
                  default_format="markdown")
 
-
-
-
 mapTimer = MapTimer()
 mapUser = MapUser()
 
+
 @bot.on_bot_start()
+async def startBot(pd: aiomax.BotStartPayload):
+    kbStartBot = aiomax.buttons.KeyboardBuilder()
+    b = aiomax.buttons.CallbackButton("START", "start")
+    kbStartBot.add(b)
+    await pd.send(
+        "Pomodoro🍅 Бот предназначен для отслеживания своего времени",
+        keyboard=kbStartBot
+    )
+
+
+@bot.on_button_callback('start')
 @bot.on_command('start')
-async def start(pd: aiomax.BotStartPayload):
+async def start(ctx: aiomax.CommandContext):
     global mapUser
     user_name = None
-    if type(pd) == aiomax.BotStartPayload:
-        user_name = pd.user.name
-    else:
-        user_name = pd.sender.name
-    user_id = pd.user_id
+    user_id = ctx.user_id
 
     user = User(user_id, user_name)
     mapUser.add(user)
@@ -31,7 +36,7 @@ async def start(pd: aiomax.BotStartPayload):
     kbStart = aiomax.buttons.KeyboardBuilder()
     b = aiomax.buttons.CallbackButton("Создать таймер", "create_timer")
     kbStart.add(b)
-    await pd.send("POMODORO BOT", keyboard=kbStart)
+    await ctx.send("POMODORO BOT", keyboard=kbStart)
 
 
 @bot.on_command('create_timer')
@@ -90,6 +95,7 @@ async def write_name(message: aiomax.Message, cursor: fsm.FSMCursor):
     cursor.change_state('enter_value')
     cursor.change_data({'name_of_task': message.content})
 
+
 @bot.on_message(aiomax.filters.state('enter_value'))
 async def write_name(message: aiomax.Message, cursor: fsm.FSMCursor):
     global mapUser
@@ -102,7 +108,6 @@ async def write_name(message: aiomax.Message, cursor: fsm.FSMCursor):
 
     user = mapUser.get(message.user_id)
     user.add_task(task)
-
 
     kbTimer = aiomax.buttons.KeyboardBuilder()
     btn1 = aiomax.buttons.CallbackButton("Запустить таймер", "start_timer")
@@ -128,6 +133,7 @@ async def end_timer(ctx: aiomax.CommandContext):
         f"Время работы: {'0' if t.tm_min < 10 else ''}{t.tm_min}:{'0' if t.tm_sec < 10 else ''}{t.tm_sec}\nТаймер остановился в {time.localtime().tm_hour}:{'0' if time.localtime().tm_min < 10 else ''}{time.localtime().tm_min}",
         keyboard=kbEnd
     )
+
 
 @bot.on_button_callback('end_task')
 async def end_task(ctx: aiomax.CommandContext):

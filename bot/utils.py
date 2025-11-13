@@ -20,8 +20,6 @@ class Timer:
         self.msg_start = msg_id
         self.task = None
 
-
-
     def set_time_start(self, time_start: float) -> None:
         self.time_start = time_start
 
@@ -47,6 +45,7 @@ class MapTimer:
     def delete(self, id: int) -> None:
         del self.timers[id]
 
+
 class User:
     id: int
     name: str
@@ -54,7 +53,7 @@ class User:
     tasks: list[Task]
     time_spent: float
 
-    def __init__(self, id:int,  name: str) -> None:
+    def __init__(self, id: int, name: str) -> None:
         self.id = id
         self.name = name
         self.points = 0
