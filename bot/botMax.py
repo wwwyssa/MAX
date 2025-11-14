@@ -3,81 +3,76 @@ import time
 
 from aiomax import fsm
 
-from utils import Timer, MapTimer, User, MapUser, Task
+from utils import StopWatch, MapStopWatch, User, MapUser, Task
 
 bot = aiomax.Bot("f9LHodD0cOIRY0kxaAAsvfhYqEv2ley3x9B2T7Mn6JIxw7Y6i5U8Wu1eMGbWXUNk1menHVRnTDdwyLRUe6mA",
                  default_format="markdown")
 
-mapTimer = MapTimer()
+
+
+
+mapStopWatch = MapStopWatch()
 mapUser = MapUser()
 
-
 @bot.on_bot_start()
-async def startBot(pd: aiomax.BotStartPayload):
-    kbStartBot = aiomax.buttons.KeyboardBuilder()
-    b = aiomax.buttons.CallbackButton("START", "start")
-    kbStartBot.add(b)
-    await pd.send(
-        "Pomodoro🍅 Бот предназначен для отслеживания своего времени",
-        keyboard=kbStartBot
-    )
-
-
-@bot.on_button_callback('start')
 @bot.on_command('start')
-async def start(ctx: aiomax.CommandContext):
+async def start(pd: aiomax.BotStartPayload):
     global mapUser
     user_name = None
-    user_id = ctx.user_id
+    if type(pd) == aiomax.BotStartPayload:
+        user_name = pd.user.name
+    else:
+        user_name = pd.sender.name
+    user_id = pd.user_id
 
     user = User(user_id, user_name)
     mapUser.add(user)
 
     kbStart = aiomax.buttons.KeyboardBuilder()
-    b = aiomax.buttons.CallbackButton("Создать таймер", "create_timer")
+    b = aiomax.buttons.CallbackButton("Создать секундомер", "create_stopWatch")
     kbStart.add(b)
-    await ctx.send("POMODORO BOT", keyboard=kbStart)
+    await pd.send("POMODORO BOT", keyboard=kbStart)
 
 
-@bot.on_command('create_timer')
-@bot.on_button_callback('create_timer')
+@bot.on_command('create_stopWatch')
+@bot.on_button_callback('create_stopWatch')
 async def create_timer(ctx: aiomax.CommandContext):
-    global mapTimer
+    global mapStopWatch
 
-    if ctx.user_id in mapTimer.timers:
-        t = mapTimer.get(ctx.user_id)
+    if ctx.user_id in mapStopWatch.stopWatches:
+        t = mapStopWatch.get(ctx.user_id)
         await bot.delete_message(str(t.msg_start))
-    timer = Timer(ctx.user_id, time.time())
+    stopWhatch = StopWatch(ctx.user_id, time.time())
 
     kbTimer = aiomax.buttons.KeyboardBuilder()
-    btn1 = aiomax.buttons.CallbackButton("Запустить таймер", "start_timer")
+    btn1 = aiomax.buttons.CallbackButton("Запустить секундомер", "start_stopWatch")
     btn2 = aiomax.buttons.CallbackButton("Создать задачу", "create_task")
     kbTimer.add(btn1)
     kbTimer.add(btn2)
 
     m = await ctx.message.reply(
-        f"Таймер создан. Вы можете запустить его или создать задачу.",
+        f"Секундомер создан. Вы можете запустить его или создать задачу.",
         keyboard=kbTimer
     )
-    timer.add_msg_id(m.id)
-    mapTimer.add(timer)
+    stopWhatch.add_msg_id(m.id)
+    mapStopWatch.add(stopWhatch)
 
 
 # Отправляем сообщение с кнопкой при вводе команды /start_timer
-@bot.on_command('start_timer')
-@bot.on_button_callback('start_timer')
+@bot.on_command('start_stopWatch')
+@bot.on_button_callback('start_stopWatch')
 async def start_timer(ctx: aiomax.CommandContext):
-    global mapTimer
+    global mapStopWatch
 
     kbTimer = aiomax.buttons.KeyboardBuilder()
-    btn1 = aiomax.buttons.CallbackButton("Остановить таймер", "stop_timer")
+    btn1 = aiomax.buttons.CallbackButton("Остановить секундомер", "stop_stopWatch")
     kbTimer.add(btn1)
 
-    timer = mapTimer.get(ctx.user_id)
+    timer = mapStopWatch.get(ctx.user_id)
     timer.set_time_start(time.time())
 
     m = await ctx.message.reply(
-        f"Таймер запущен в {time.localtime().tm_hour}:{'0' if time.localtime().tm_min < 10 else ''}{time.localtime().tm_min}",
+        f"Секундомер запущен в {time.localtime().tm_hour}:{'0' if time.localtime().tm_min < 10 else ''}{time.localtime().tm_min}",
         keyboard=kbTimer
     )
 
@@ -95,7 +90,6 @@ async def write_name(message: aiomax.Message, cursor: fsm.FSMCursor):
     cursor.change_state('enter_value')
     cursor.change_data({'name_of_task': message.content})
 
-
 @bot.on_message(aiomax.filters.state('enter_value'))
 async def write_name(message: aiomax.Message, cursor: fsm.FSMCursor):
     global mapUser
@@ -109,46 +103,48 @@ async def write_name(message: aiomax.Message, cursor: fsm.FSMCursor):
     user = mapUser.get(message.user_id)
     user.add_task(task)
 
+
     kbTimer = aiomax.buttons.KeyboardBuilder()
-    btn1 = aiomax.buttons.CallbackButton("Запустить таймер", "start_timer")
+    btn1 = aiomax.buttons.CallbackButton("Запустить секундомер", "start_stopWatch")
     kbTimer.add(btn1)
     await message.reply(f"Задача {name_of_task} создана, ценность {value_of_task}", keyboard=kbTimer)
 
     cursor.clear()
 
 
-@bot.on_button_callback("stop_timer")
+@bot.on_button_callback("stop_stopWatch")
 async def end_timer(ctx: aiomax.CommandContext):
-    global mapTimer
-    timer = mapTimer.get(ctx.user_id)
+    global mapStopWatch
+    timer = mapStopWatch.get(ctx.user_id)
     await bot.delete_message(str(timer.msg_start))
     timer.time_end = time.time()
     kbEnd = aiomax.buttons.KeyboardBuilder()
-    btn1 = aiomax.buttons.CallbackButton("Запустить таймер", "start_timer")
+    btn1 = aiomax.buttons.CallbackButton("Запустить секундомер", "start_timer")
     btn2 = aiomax.buttons.CallbackButton("Закончить задачу", "end_task")
     kbEnd.add(btn1)
     kbEnd.add(btn2)
     t = time.localtime(time.time() - timer.time_start)
     await ctx.reply(
-        f"Время работы: {'0' if t.tm_min < 10 else ''}{t.tm_min}:{'0' if t.tm_sec < 10 else ''}{t.tm_sec}\nТаймер остановился в {time.localtime().tm_hour}:{'0' if time.localtime().tm_min < 10 else ''}{time.localtime().tm_min}",
+        f"Время работы: {'0' if t.tm_min < 10 else ''}{t.tm_min}:{'0' if t.tm_sec < 10 else ''}{t.tm_sec}\nСекундомер остановился в {time.localtime().tm_hour}:{'0' if time.localtime().tm_min < 10 else ''}{time.localtime().tm_min}",
         keyboard=kbEnd
     )
 
-
 @bot.on_button_callback('end_task')
 async def end_task(ctx: aiomax.CommandContext):
-    global mapTimer, mapUser
-    timer = mapTimer.get(ctx.user_id)
+    global mapStopWatch, mapUser
+    timer = mapStopWatch.get(ctx.user_id)
     await bot.delete_message(str(timer.msg_start))
-    mapTimer.delete(ctx.user_id)
+    mapStopWatch.delete(ctx.user_id)
     keyboard = aiomax.buttons.KeyboardBuilder()
-    btn1 = aiomax.buttons.CallbackButton("Создать таймер", "create_timer")
+    btn1 = aiomax.buttons.CallbackButton("Создать секундомер", "create_timer")
     keyboard.add(btn1)
     user = mapUser.get(ctx.user_id)
 
     print(user.get_tasks())
 
-    await ctx.reply("Задача завершена. Вы можете создать новый таймер и задачу", keyboard=keyboard)
+    await ctx.reply("Задача завершена. Вы можете создать новый секундомер и задачу", keyboard=keyboard)
+
+
 
 
 if __name__ == "__main__":

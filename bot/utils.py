@@ -7,7 +7,7 @@ class Task:
         self.value = value
 
 
-class Timer:
+class StopWatch:
     id: int
     time_start: float
     time_end: float
@@ -20,6 +20,8 @@ class Timer:
         self.msg_start = msg_id
         self.task = None
 
+
+
     def set_time_start(self, time_start: float) -> None:
         self.time_start = time_start
 
@@ -30,20 +32,36 @@ class Timer:
         self.task = task
 
 
-class MapTimer:
-    timers: dict[int: Timer]
+class MapStopWatch:
+    stopWatches: dict[int: StopWatch]
 
     def __init__(self):
-        self.timers = {}
+        self.stopWatches = {}
 
-    def add(self, timer: Timer) -> None:
-        self.timers[timer.id] = timer
+    def add(self, stopWatch: StopWatch) -> None:
+        self.stopWatches[stopWatch.id] = stopWatch
 
-    def get(self, id: int) -> Timer:
-        return self.timers[id]
+    def get(self, id: int) -> StopWatch:
+        return self.stopWatches[id]
 
     def delete(self, id: int) -> None:
-        del self.timers[id]
+        del self.stopWatches[id]
+
+class Timer:
+    id: int
+    time_start: float
+    time_end: float
+    duration: float
+    task: Task
+
+    def __init__(self, id: int, time_start: float, duration: float) -> None:
+        self.id = id
+        self.time_start = time_start
+        self.duration = duration
+        self.time_end = time_start + duration
+        self.task = None
+
+
 
 
 class User:
@@ -53,7 +71,7 @@ class User:
     tasks: list[Task]
     time_spent: float
 
-    def __init__(self, id: int, name: str) -> None:
+    def __init__(self, id:int,  name: str) -> None:
         self.id = id
         self.name = name
         self.points = 0
@@ -93,3 +111,4 @@ class MapUser:
 
     def delete(self, id: int) -> None:
         del self.users[id]
+
