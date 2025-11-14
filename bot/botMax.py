@@ -8,22 +8,27 @@ from utils import StopWatch, MapStopWatch, User, MapUser, Task
 bot = aiomax.Bot("f9LHodD0cOIRY0kxaAAsvfhYqEv2ley3x9B2T7Mn6JIxw7Y6i5U8Wu1eMGbWXUNk1menHVRnTDdwyLRUe6mA",
                  default_format="markdown")
 
-
-
-
 mapStopWatch = MapStopWatch()
 mapUser = MapUser()
 
+
 @bot.on_bot_start()
+async def startBot(pd: aiomax.BotStartPayload):
+    kbStartBot = aiomax.buttons.KeyboardBuilder()
+    b = aiomax.buttons.CallbackButton("START", "start")
+    kbStartBot.add(b)
+    await pd.send(
+        "Pomodoro🍅 Бот предназначен для отслеживания своего времени",
+        keyboard=kbStartBot
+    )
+
+
+@bot.on_button_callback('start')
 @bot.on_command('start')
-async def start(pd: aiomax.BotStartPayload):
+async def start(ctx: aiomax.CommandContext):
     global mapUser
     user_name = None
-    if type(pd) == aiomax.BotStartPayload:
-        user_name = pd.user.name
-    else:
-        user_name = pd.sender.name
-    user_id = pd.user_id
+    user_id = ctx.user_id
 
     user = User(user_id, user_name)
     mapUser.add(user)
@@ -31,7 +36,7 @@ async def start(pd: aiomax.BotStartPayload):
     kbStart = aiomax.buttons.KeyboardBuilder()
     b = aiomax.buttons.CallbackButton("Создать секундомер", "create_stopWatch")
     kbStart.add(b)
-    await pd.send("POMODORO BOT", keyboard=kbStart)
+    await ctx.send("POMODORO BOT", keyboard=kbStart)
 
 
 @bot.on_command('create_stopWatch')
@@ -42,7 +47,7 @@ async def create_timer(ctx: aiomax.CommandContext):
     if ctx.user_id in mapStopWatch.stopWatches:
         t = mapStopWatch.get(ctx.user_id)
         await bot.delete_message(str(t.msg_start))
-    stopWhatch = StopWatch(ctx.user_id, time.time())
+    stopWatch = StopWatch(ctx.user_id, time.time())
 
     kbTimer = aiomax.buttons.KeyboardBuilder()
     btn1 = aiomax.buttons.CallbackButton("Запустить секундомер", "start_stopWatch")
@@ -54,8 +59,8 @@ async def create_timer(ctx: aiomax.CommandContext):
         f"Секундомер создан. Вы можете запустить его или создать задачу.",
         keyboard=kbTimer
     )
-    stopWhatch.add_msg_id(m.id)
-    mapStopWatch.add(stopWhatch)
+    stopWatch.add_msg_id(m.id)
+    mapStopWatch.add(stopWatch)
 
 
 # Отправляем сообщение с кнопкой при вводе команды /start_timer
@@ -90,6 +95,7 @@ async def write_name(message: aiomax.Message, cursor: fsm.FSMCursor):
     cursor.change_state('enter_value')
     cursor.change_data({'name_of_task': message.content})
 
+
 @bot.on_message(aiomax.filters.state('enter_value'))
 async def write_name(message: aiomax.Message, cursor: fsm.FSMCursor):
     global mapUser
@@ -102,7 +108,6 @@ async def write_name(message: aiomax.Message, cursor: fsm.FSMCursor):
 
     user = mapUser.get(message.user_id)
     user.add_task(task)
-
 
     kbTimer = aiomax.buttons.KeyboardBuilder()
     btn1 = aiomax.buttons.CallbackButton("Запустить секундомер", "start_stopWatch")
@@ -119,7 +124,7 @@ async def end_timer(ctx: aiomax.CommandContext):
     await bot.delete_message(str(timer.msg_start))
     timer.time_end = time.time()
     kbEnd = aiomax.buttons.KeyboardBuilder()
-    btn1 = aiomax.buttons.CallbackButton("Запустить секундомер", "start_timer")
+    btn1 = aiomax.buttons.CallbackButton("Запустить секундомер", "start_stopWatch")
     btn2 = aiomax.buttons.CallbackButton("Закончить задачу", "end_task")
     kbEnd.add(btn1)
     kbEnd.add(btn2)
@@ -129,6 +134,7 @@ async def end_timer(ctx: aiomax.CommandContext):
         keyboard=kbEnd
     )
 
+
 @bot.on_button_callback('end_task')
 async def end_task(ctx: aiomax.CommandContext):
     global mapStopWatch, mapUser
@@ -136,15 +142,13 @@ async def end_task(ctx: aiomax.CommandContext):
     await bot.delete_message(str(timer.msg_start))
     mapStopWatch.delete(ctx.user_id)
     keyboard = aiomax.buttons.KeyboardBuilder()
-    btn1 = aiomax.buttons.CallbackButton("Создать секундомер", "create_timer")
+    btn1 = aiomax.buttons.CallbackButton("Создать секундомер", "create_stopWatch")
     keyboard.add(btn1)
     user = mapUser.get(ctx.user_id)
 
     print(user.get_tasks())
 
     await ctx.reply("Задача завершена. Вы можете создать новый секундомер и задачу", keyboard=keyboard)
-
-
 
 
 if __name__ == "__main__":

@@ -20,8 +20,6 @@ class StopWatch:
         self.msg_start = msg_id
         self.task = None
 
-
-
     def set_time_start(self, time_start: float) -> None:
         self.time_start = time_start
 
@@ -47,6 +45,7 @@ class MapStopWatch:
     def delete(self, id: int) -> None:
         del self.stopWatches[id]
 
+
 class Timer:
     id: int
     time_start: float
@@ -62,16 +61,14 @@ class Timer:
         self.task = None
 
 
-
-
 class User:
     id: int
-    name: str
+    name: str | None
     points: int
     tasks: list[Task]
     time_spent: float
 
-    def __init__(self, id:int,  name: str) -> None:
+    def __init__(self, id: int, name: str) -> None:
         self.id = id
         self.name = name
         self.points = 0
@@ -111,4 +108,3 @@ class MapUser:
 
     def delete(self, id: int) -> None:
         del self.users[id]
-
